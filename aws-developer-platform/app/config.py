@@ -13,7 +13,7 @@ class Settings(BaseSettings):
 
     environment: str = "development"
     database_url: str = "sqlite+aiosqlite:///./platform.db"
-    session_secret: SecretStr = SecretStr("development-only-change-me")
+    session_secret: SecretStr = SecretStr("development-only-change-me-32-bytes")
     session_idle_minutes: int = 15
     session_absolute_hours: int = 8
     session_warning_minutes: int = 2

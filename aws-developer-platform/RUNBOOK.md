@@ -277,31 +277,10 @@ pnpmw install
 pnpmw dev
 ```
 
-Open `http://localhost:5173`. Vite proxies `/api` to the API on port 8000. The Git Bash cookie jar is
-not shared with the browser. For this local-only walkthrough, open the browser developer console
-on that page and establish a development session in the browser itself:
-
-```javascript
-await fetch('/api/v1/auth/session', {
-  method: 'POST',
-  credentials: 'include',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    principal_arn:
-      'arn:aws:sts::000000000000:assumed-role/platform-team-lead/browser-walkthrough',
-    platform_role: 'Team_Lead',
-    role_tags: {
-      display_name: 'Browser Team Lead',
-      email: 'browser@example.test',
-      team: 'platform',
-    },
-  }),
-});
-location.reload();
-```
-
-This endpoint refuses to operate outside development mode. A deployed environment must replace it
-with the configured STS verification flow.
+Open `http://localhost:5173`. Vite proxies `/api` to the API on port 8000. If the browser has no
+session cookie, it redirects to `/login`. Select **Team lead** and choose **Sign in**, then open the
+project catalogue. The local sign-in endpoint refuses to operate outside development mode; a
+deployed environment must replace it with the configured STS verification flow.
 
 ## 10. Run automated verification
 

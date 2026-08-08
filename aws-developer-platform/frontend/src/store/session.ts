@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-interface SessionState {
+export interface SessionState {
   readonly identity: string | null;
   readonly role: 'Developer' | 'Team_Lead' | 'Platform_Admin' | null;
   readonly setSession: (identity: string, role: SessionState['role']) => void;

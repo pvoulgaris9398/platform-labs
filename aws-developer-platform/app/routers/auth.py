@@ -2,10 +2,11 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel
 
 from app.config import Settings, get_settings
+from app.middleware.session import current_user
 from app.schemas.common import Envelope, Identity, Role
 from app.services.auth import create_session, extract_identity
 
@@ -20,11 +21,20 @@ class VerifiedIAMSession(BaseModel):
     platform_role: Role
 
 
+@router.get("/me", response_model=Envelope[Identity], status_code=status.HTTP_200_OK)
+async def get_current_identity(
+    identity: Annotated[Identity, Depends(current_user)],
+) -> Envelope[Identity]:
+    """Return the identity represented by the browser session cookie."""
+
+    return Envelope(data=identity)
+
+
 @router.post("/session", response_model=Envelope[Identity], status_code=status.HTTP_201_CREATED)
 async def establish_session(
     payload: VerifiedIAMSession,
     response: Response,
-    settings: Annotated[Settings, get_settings],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> Envelope[Identity]:
     """Create a session from an identity already verified by the deployment's STS adapter."""
 

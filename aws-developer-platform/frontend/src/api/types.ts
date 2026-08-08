@@ -1,5 +1,13 @@
 export type ResourceType = 's3' | 'lambda' | 'dynamodb';
 
+export interface Identity {
+  readonly principal_arn: string;
+  readonly display_name: string;
+  readonly email: string;
+  readonly team: string;
+  readonly role: 'Developer' | 'Team_Lead' | 'Platform_Admin';
+}
+
 export interface Project {
   readonly id: string;
   readonly name: string;

@@ -43,7 +43,7 @@ services:
     build: .
     environment:
       DATABASE_URL: postgresql+asyncpg://platform:local-development-only@db/platform
-      SESSION_SECRET: local-development-only
+      SESSION_SECRET: local-development-only-change-me-32-bytes
     ports: ["8000:8000"]
     depends_on:
       db:
