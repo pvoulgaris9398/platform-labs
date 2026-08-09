@@ -8,6 +8,8 @@ ROLE_ACTIONS = {
         "s3": ["s3:CreateBucket", "s3:DeleteBucket", "s3:PutBucketTagging"],
         "lambda": ["lambda:CreateFunction", "lambda:UpdateFunctionCode", "lambda:DeleteFunction"],
         "dynamodb": ["dynamodb:CreateTable", "dynamodb:UpdateTable", "dynamodb:DeleteTable"],
+        "aurora": ["rds:CreateDBCluster", "rds:ModifyDBCluster", "rds:DeleteDBCluster"],
+        "rds_postgresql": ["rds:CreateDBInstance", "rds:ModifyDBInstance", "rds:DeleteDBInstance"],
     },
     "developer": {
         "s3": ["s3:GetObject", "s3:ListBucket"],
@@ -18,11 +20,15 @@ ROLE_ACTIONS = {
             "dynamodb:Query",
             "dynamodb:Scan",
         ],
+        "aurora": ["rds:DescribeDBClusters"],
+        "rds_postgresql": ["rds:DescribeDBInstances"],
     },
     "readonly": {
         "s3": ["s3:GetObject", "s3:ListBucket"],
         "lambda": ["lambda:GetFunction"],
         "dynamodb": ["dynamodb:DescribeTable", "dynamodb:GetItem", "dynamodb:Query"],
+        "aurora": ["rds:DescribeDBClusters"],
+        "rds_postgresql": ["rds:DescribeDBInstances"],
     },
 }
 

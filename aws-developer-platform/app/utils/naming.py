@@ -28,10 +28,15 @@ def validate_resource_name(
     separator = "." if kind is ResourceType.DYNAMODB else "-"
     value = separator.join((team, project, environment, suffix))
     violations: list[str] = []
-    if kind in {ResourceType.S3, ResourceType.LAMBDA}:
+    if kind in {
+        ResourceType.S3,
+        ResourceType.LAMBDA,
+        ResourceType.AURORA,
+        ResourceType.RDS_POSTGRESQL,
+    }:
         if not re.fullmatch(r"[a-z0-9-]+", value):
             violations.append("must contain only lowercase letters, digits, and hyphens")
-        maximum = 63 if kind is ResourceType.S3 else 64
+        maximum = 64 if kind is ResourceType.LAMBDA else 63
         if len(value) > maximum:
             violations.append(f"must not exceed {maximum} characters")
         if value.startswith("-") or value.endswith("-"):

@@ -35,7 +35,7 @@ class Project(Base):
     default_owner: Mapped[str] = mapped_column(String(256))
     allowed_environments: Mapped[list[str]] = mapped_column(SAJSON, default=lambda: ["dev", "uat"])
     allowed_resource_types: Mapped[list[str]] = mapped_column(
-        SAJSON, default=lambda: ["s3", "lambda", "dynamodb"]
+        SAJSON, default=lambda: ["s3", "lambda", "dynamodb", "aurora", "rds_postgresql"]
     )
     monthly_budget_usd: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("100"))
     deployer_role_arn: Mapped[str | None] = mapped_column(String(512))

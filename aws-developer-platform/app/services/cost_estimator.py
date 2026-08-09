@@ -27,7 +27,7 @@ def estimate_monthly_cost(resource_type: ResourceType, config: dict[str, Any]) -
         invocations = Decimal(str(config.get("monthly_invocations", 0)))
         value = memory_gb * duration * invocations * Decimal("0.0000166667")
         value += invocations * Decimal("0.0000002")
-    else:
+    elif resource_type is ResourceType.DYNAMODB:
         if config.get("billing_mode", "PAY_PER_REQUEST") == "PAY_PER_REQUEST":
             reads = Decimal(str(config.get("monthly_read_requests", 0)))
             writes = Decimal(str(config.get("monthly_write_requests", 0)))
@@ -38,6 +38,14 @@ def estimate_monthly_cost(resource_type: ResourceType, config: dict[str, Any]) -
             wcu = Decimal(str(config.get("wcu", 0)))
             value = rcu * Decimal("0.00013") * Decimal(730)
             value += wcu * Decimal("0.00065") * Decimal(730)
+    elif resource_type is ResourceType.AURORA:
+        instances = Decimal(str(config.get("instances", 1)))
+        hourly_rate = Decimal(str(config.get("hourly_rate_usd", "0.12")))
+        value = instances * hourly_rate * Decimal(730)
+    else:
+        instances = Decimal(str(config.get("instances", 1)))
+        hourly_rate = Decimal(str(config.get("hourly_rate_usd", "0.08")))
+        value = instances * hourly_rate * Decimal(730)
     return max(value.quantize(Decimal("0.0001")), Decimal(0))
 
 

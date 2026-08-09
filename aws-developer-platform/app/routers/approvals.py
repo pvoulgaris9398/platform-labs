@@ -34,7 +34,14 @@ async def approval_queue(
     records = (
         await db.scalars(
             select(ResourceRequest)
-            .where(ResourceRequest.status == RequestStatus.APPROVAL_PENDING.value)
+            .where(
+                ResourceRequest.status.in_(
+                    [
+                        RequestStatus.APPROVAL_PENDING.value,
+                        RequestStatus.GUARDRAIL_REVIEW.value,
+                    ]
+                )
+            )
             .order_by(ResourceRequest.created_at)
         )
     ).all()
@@ -61,6 +68,8 @@ async def approve(
         return Envelope(data=ResourceRequestResponse.model_validate(record))
     if record.status == RequestStatus.FAILED.value:
         raise HTTPException(status.HTTP_409_CONFLICT, "request provisioning already failed")
+    if record.status == RequestStatus.GUARDRAIL_REVIEW.value:
+        record.status = transition(record.status, RequestStatus.APPROVAL_PENDING).value
     if record.status == RequestStatus.APPROVAL_PENDING.value:
         record.status = transition(record.status, RequestStatus.APPROVED).value
         record.approved_by = user.principal_arn

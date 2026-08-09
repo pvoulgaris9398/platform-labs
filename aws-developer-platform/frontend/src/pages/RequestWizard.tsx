@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router';
 import { z } from 'zod';
 
 import { api } from '../api/client';
+import { RESOURCE_TYPES } from '../api/resourceTypes';
 import type { Project, ResourceRequest, ResourceType } from '../api/types';
 
 type Environment = 'dev' | 'uat' | 'staging' | 'prod';
@@ -14,6 +15,8 @@ const resourceLabels = {
   s3: 'S3 bucket',
   lambda: 'Lambda function',
   dynamodb: 'DynamoDB table',
+  aurora: 'Amazon Aurora database',
+  rds_postgresql: 'Amazon RDS for PostgreSQL',
 } as const;
 
 const environmentLabels = {
@@ -29,7 +32,7 @@ function isEnvironment(value: string): value is Environment {
 
 const schema = z.object({
   project_id: z.string().uuid('Choose a project'),
-  resource_type: z.enum(['s3', 'lambda', 'dynamodb']),
+  resource_type: z.enum(RESOURCE_TYPES),
   name_suffix: z.string().min(1),
   region: z.string().min(1),
   environment: z.enum(['dev', 'uat', 'staging', 'prod']),
@@ -63,7 +66,7 @@ export function RequestWizard(): React.JSX.Element {
   });
   const selectedProjectId = useWatch({ control, name: 'project_id' });
   const selectedProject = projects.data?.find((project) => project.id === selectedProjectId);
-  const resourceTypes: readonly ResourceType[] = selectedProject?.allowed_resource_types ?? ['s3', 'lambda', 'dynamodb'];
+  const resourceTypes: readonly ResourceType[] = selectedProject?.allowed_resource_types ?? RESOURCE_TYPES;
   const environments: readonly Environment[] = selectedProject?.allowed_environments.filter(isEnvironment) ?? ['dev', 'uat'];
 
   const create = useMutation({

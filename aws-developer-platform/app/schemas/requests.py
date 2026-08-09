@@ -17,6 +17,8 @@ class ResourceType(StrEnum):
     S3 = "s3"
     LAMBDA = "lambda"
     DYNAMODB = "dynamodb"
+    AURORA = "aurora"
+    RDS_POSTGRESQL = "rds_postgresql"
 
 
 class RequestStatus(StrEnum):

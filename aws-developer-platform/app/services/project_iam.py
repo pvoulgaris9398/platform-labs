@@ -99,7 +99,10 @@ class MiniStackProjectIamScaffolder:
         return arn or f"arn:aws:iam::{self.account_id}:role/{role_name}"
 
     async def _put_inline_policy(self, role_name: str, role_kind: str) -> None:
-        policy = build_policy(role_kind, {"s3": [], "lambda": [], "dynamodb": []})
+        policy = build_policy(
+            role_kind,
+            {"s3": [], "lambda": [], "dynamodb": [], "aurora": [], "rds_postgresql": []},
+        )
         params = {
             "Action": "PutRolePolicy",
             "Version": "2010-05-08",

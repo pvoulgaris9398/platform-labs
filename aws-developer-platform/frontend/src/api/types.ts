@@ -1,4 +1,6 @@
-export type ResourceType = 's3' | 'lambda' | 'dynamodb';
+import type { ResourceType } from './resourceTypes';
+
+export type { ResourceType } from './resourceTypes';
 
 export interface Identity {
   readonly principal_arn: string;
@@ -35,6 +37,7 @@ export interface ResourceRequest {
   readonly environment: string;
   readonly status: string;
   readonly estimated_monthly_cost_usd: string | null;
+  readonly provisioned_arn: string | null;
   readonly guardrail_warnings: readonly GuardrailWarning[];
   readonly expiry_date: string;
 }

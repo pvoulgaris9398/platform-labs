@@ -18,7 +18,13 @@ class ProjectCreate(BaseModel):
     cost_center: str = Field(min_length=1, max_length=64)
     default_owner: str | None = Field(default=None, min_length=1, max_length=256)
     allowed_environments: list[str] = ["dev", "uat"]
-    allowed_resource_types: list[str] = ["s3", "lambda", "dynamodb"]
+    allowed_resource_types: list[str] = [
+        "s3",
+        "lambda",
+        "dynamodb",
+        "aurora",
+        "rds_postgresql",
+    ]
     monthly_budget_usd: Decimal = Field(default=Decimal("100"), gt=0)
     tags: dict[str, str] = Field(default_factory=dict)
 
@@ -36,7 +42,13 @@ class ProjectCreate(BaseModel):
     def allowed_resources(cls, value: list[str]) -> list[str]:
         """Validate project resource choices."""
 
-        if not value or set(value) - {"s3", "lambda", "dynamodb"}:
+        if not value or set(value) - {
+            "s3",
+            "lambda",
+            "dynamodb",
+            "aurora",
+            "rds_postgresql",
+        }:
             raise ValueError("contains unsupported resource types")
         return value
 
@@ -59,7 +71,9 @@ class ProjectUpdate(BaseModel):
     @field_validator("allowed_resource_types")
     @classmethod
     def allowed_resources(cls, value: list[str] | None) -> list[str] | None:
-        if value is not None and (not value or set(value) - {"s3", "lambda", "dynamodb"}):
+        if value is not None and (
+            not value or set(value) - {"s3", "lambda", "dynamodb", "aurora", "rds_postgresql"}
+        ):
             raise ValueError("contains unsupported resource types")
         return value
 
