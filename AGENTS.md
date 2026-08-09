@@ -11,31 +11,75 @@ The target architecture is a React SPA and a FastAPI service on ECS Fargate, bac
 RDS. AWS infrastructure is managed with Terraform. The POC prioritises security, auditability, and
 operational simplicity for up to 50 concurrent internal users.
 
-## Authoritative project documents
+## Codex operating guidance
 
-Read the relevant documents before planning or changing code:
+This file is the Codex-native instruction set for the repository. It contains the project rules,
+architecture constraints, implementation order, and coding standards that agents must follow without
+requiring a separate project-spec lookup.
 
-- `.kiro/specs/aws-developer-platform/requirements.md`: product requirements, user stories,
-  acceptance criteria, and non-functional requirements.
-- `.kiro/specs/aws-developer-platform/design.md`: architecture, interfaces, data model, state
-  machines, deployment, security decisions, correctness properties, and test strategy.
-- `.kiro/specs/aws-developer-platform/tasks.md`: ordered implementation checklist and traceability
-  links. Update its checkboxes when completing an implementation task.
-- `.kiro/steering/design-principles.md`: repository-wide architecture, API, security,
-  observability, error-handling, testing, and review conventions.
-- `.kiro/steering/python.md`: Python, FastAPI, Pydantic, SQLAlchemy, Ruff, and pytest conventions.
-- `.kiro/steering/typescript.md`: TypeScript, React, MUI, state-management, accessibility, and
-  frontend testing conventions.
-- `.kiro/steering/aws-infrastructure.md`: AWS, Terraform, IAM, networking, secrets, observability,
-  reliability, and cost conventions.
+When conflicts arise, use this precedence: product requirements, architecture/design decisions,
+implementation checklist, language/infrastructure conventions, existing executable tests and
+dependency manifests. Call out the conflict before changing an explicit technology version or
+architectural decision. Do not perform incidental dependency upgrades.
 
-Do not duplicate or rewrite these documents in generated code or new planning files. Reference the
-requirement, design section, correctness property, and task number that a change implements.
+## Product requirements snapshot
 
-If documents conflict, use this precedence: requirements, design, tasks, applicable steering file.
-Call out the conflict before implementing a choice that changes an explicit technology version or
-architectural decision. Existing dependency manifests and executable tests become authoritative for
-the versions actually present once implementation exists; do not perform incidental upgrades.
+- The platform is a proof-of-concept internal developer portal for governed self-service AWS
+  resources through a React SPA and FastAPI API.
+- Supported demo resources currently include S3 buckets, Lambda functions, DynamoDB tables, Aurora
+  databases, and RDS PostgreSQL instances. The original production target provisions through
+  Terraform Cloud; local POC provisioning may target MiniStack when explicitly configured.
+- Users authenticate through IAM-role-derived identity. Sessions expose role, team, display name,
+  email, and principal ARN.
+- Role model: `Developer`, `Team_Lead`, `Platform_Admin`.
+- Projects are registered by Team Leads or Platform Admins and seed allowed environments, allowed
+  resource types, default owner, budget, tags, and IAM role scaffolding.
+- Resource requests must enforce required tags: `cost_center`, `environment`, `team`, `owner`,
+  `project`, `application_name`, `expiry_date`, and `created_by`.
+- Naming conventions:
+  - S3 bucket: `{team}-{project}-{environment}-{name}`, lowercase letters, digits, hyphens, max 63.
+  - Lambda function: `{team}-{project}-{environment}-{name}`, lowercase letters, digits, hyphens,
+    max 64, must not start with `aws-`.
+  - DynamoDB table: `{team}.{project}.{environment}.{name}`, table suffix in PascalCase, max 255.
+  - Aurora and RDS PostgreSQL demo names follow the S3-style hyphenated lowercase convention, max 63.
+- Developer-accessible environments are `dev` and `uat`; `staging` and `prod` require Team Lead
+  authority.
+- Requests move through guarded workflow states: pending, guardrail review, approval pending,
+  approved, provisioning, provisioned, failed, rejected, expired, and lifecycle states.
+- Guardrails are soft warnings requiring acknowledgement or Team Lead approval flow; never silently
+  bypass guardrail warnings.
+- Project budget and quota checks are soft governance gates with justification and Team Lead review.
+- Every state transition and security-sensitive action must be auditable.
+- Local MiniStack is acceptable for the POC, but it is not an IAM/security-enforcement substitute for
+  real AWS. Keep local adapters isolated so production AWS/Terraform integration can replace them.
+
+## Architecture and implementation order
+
+- React SPA uses MUI, TanStack Query, React Router, react-hook-form, and Zod.
+- FastAPI service owns API routes, validation, state transitions, local provisioning adapters, and
+  persistence.
+- PostgreSQL is the application database target; local development may use SQLite if already wired.
+- Terraform Cloud is the production provisioning target, wrapped behind typed clients/services.
+- Mutable platform configuration is represented as code/data, with database caching where needed.
+- Work in dependency order unless the user explicitly names a different task or a small dependency
+  deviation is required.
+- Treat the implementation checklist and current repository contents as the completion record. Do
+  not mark a task complete until implementation and relevant verification pass.
+
+## Extracted design principles
+
+- Routers handle HTTP concerns only. Services contain business logic. Utilities are side-effect-free.
+  ORM models are persistence containers, not business-logic hosts.
+- Pass database sessions, settings, loggers, and external clients through dependency injection. Avoid
+  global mutable state and untyped service singletons.
+- Keep `app/main.py` limited to app assembly, middleware, router inclusion, exception handlers, and
+  lifespan events.
+- Prefer explicit configuration over magic. Runtime configuration must be traceable to env, SSM,
+  Secrets Manager, or documented local defaults.
+- Centralise state transitions in a transition table/function. Do not scatter status string updates.
+- Wrap AWS, Terraform Cloud, GitHub, pricing, and MiniStack calls behind typed service adapters.
+- External calls should log operation, duration, and outcome without secrets.
+- Keep PR-sized changes focused; avoid unrelated refactors and dependency upgrades.
 
 ## Working method
 
@@ -91,6 +135,11 @@ the versions actually present once implementation exists; do not perform inciden
 - Route API calls through `src/api/client.ts`; do not call `fetch` directly from components.
 - Define forms from Zod schemas and use react-hook-form. Explicitly render loading, error, empty, and
   success states.
+- Model finite TypeScript domain values as explicit unions of named literal aliases, backed by
+  runtime constants for validation and UI options. For example:
+  `type ResourceType = S3ResourceType | LambdaResourceType`, where each member is
+  `typeof ResourceTypes.S3`, `typeof ResourceTypes.Lambda`, and so on. Do not use a loose `string`,
+  a hand-written anonymous string union, or a tuple-index shortcut as the canonical domain model.
 - Use MUI theme tokens and accessible semantic controls. Every interaction must work by keyboard,
   have a visible focus state, and expose an accessible name.
 - Test behaviour through roles, labels, and accessible names. Use Vitest, Testing Library, user-event,

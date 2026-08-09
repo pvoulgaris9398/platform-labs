@@ -6,18 +6,10 @@ import { useNavigate } from 'react-router';
 import { z } from 'zod';
 
 import { api } from '../api/client';
-import { RESOURCE_TYPES } from '../api/resourceTypes';
+import { RESOURCE_TYPES, resourceTypeLabel } from '../api/resourceTypes';
 import type { Project, ResourceRequest, ResourceType } from '../api/types';
 
 type Environment = 'dev' | 'uat' | 'staging' | 'prod';
-
-const resourceLabels = {
-  s3: 'S3 bucket',
-  lambda: 'Lambda function',
-  dynamodb: 'DynamoDB table',
-  aurora: 'Amazon Aurora database',
-  rds_postgresql: 'Amazon RDS for PostgreSQL',
-} as const;
 
 const environmentLabels = {
   dev: 'Development',
@@ -126,7 +118,7 @@ export function RequestWizard(): React.JSX.Element {
         render={({ field }) => (
           <TextField {...field} select label="Resource type">
             {resourceTypes.map((resourceType) => (
-              <MenuItem key={resourceType} value={resourceType}>{resourceLabels[resourceType]}</MenuItem>
+              <MenuItem key={resourceType} value={resourceType}>{resourceTypeLabel(resourceType)}</MenuItem>
             ))}
           </TextField>
         )}
