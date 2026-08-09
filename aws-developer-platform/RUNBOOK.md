@@ -178,6 +178,12 @@ jq . <<<"$PROJECT_RESPONSE"
 printf 'Project ID: %s\n' "$PROJECT_ID"
 ```
 
+In local development, project registration uses `PROJECT_IAM_BACKEND=ministack` and sends the
+project IAM scaffolding calls to `MINISTACK_ENDPOINT`. A successful response includes
+`deployer_role_arn`, `developer_role_arn`, and `readonly_role_arn` values for the three local POC
+roles. If MiniStack is not running or rejects the IAM calls, the project is still saved with
+`status: "iam_failed"` and `iam_error_details` explains what failed.
+
 Re-running this step with persisted PostgreSQL state will conflict with the unique project name. Use
 a new name or reset the local database volume as described under cleanup.
 
@@ -229,10 +235,40 @@ curl --fail --silent --show-error --request POST \
   --cookie "$COOKIE_JAR" "$API/approvals/$REQUEST_ID/approve" | jq .
 ```
 
-The request should now be `approved`. The POC intentionally does not invoke a real Terraform Cloud
-run without deployment credentials.
+The request should now be `provisioned` and include `provisioned_arn`. In local development, the
+approval endpoint provisions S3 requests through MiniStack rather than Terraform Cloud.
 
-## 7. Exercise cost estimation directly
+## 7. Upload a test object to the provisioned S3 bucket
+
+The provisioned bucket name is the request's `resource_name`. You can capture it from the request
+response or the dashboard:
+
+```bash
+export BUCKET_NAME="$(curl --fail --silent --show-error \
+  --cookie "$COOKIE_JAR" "$API/requests/$REQUEST_ID" | jq -r '.data.resource_name')"
+printf 'hello from MiniStack\n' > sample.txt
+aws --endpoint-url="$MINISTACK_ENDPOINT" s3 cp sample.txt \
+  "s3://$BUCKET_NAME/sample.txt" \
+  --checksum-algorithm SHA256
+aws --endpoint-url="$MINISTACK_ENDPOINT" s3 ls "s3://$BUCKET_NAME/"
+```
+
+The `--checksum-algorithm SHA256` flag avoids newer AWS CLI defaults such as `CRC64NVME`, which this
+MiniStack image does not bundle optional native support for.
+
+Open the uploaded object through the MiniStack AWS proxy URL:
+
+```text
+http://localhost:4566/<bucket-name>/sample.txt
+```
+
+For example:
+
+```text
+http://localhost:4566/platform-walkthrough-dev-artifacts/sample.txt
+```
+
+## 8. Exercise cost estimation directly
 
 ```bash
 curl --fail --silent --show-error \
@@ -250,7 +286,7 @@ curl --fail --silent --show-error \
 
 The response includes `stale = true` because local fallback rates are used.
 
-## 8. Exercise MiniStack services
+## 9. Exercise MiniStack services
 
 Create and inspect representative resources through the AWS CLI:
 
@@ -258,7 +294,8 @@ Create and inspect representative resources through the AWS CLI:
 aws --endpoint-url="$MINISTACK_ENDPOINT" s3 mb s3://platform-walkthrough-dev-artifacts
 printf 'hello from MiniStack\n' > ministack-object.txt
 aws --endpoint-url="$MINISTACK_ENDPOINT" s3 cp ministack-object.txt \
-  s3://platform-walkthrough-dev-artifacts/ministack-object.txt
+  s3://platform-walkthrough-dev-artifacts/ministack-object.txt \
+  --checksum-algorithm SHA256
 aws --endpoint-url="$MINISTACK_ENDPOINT" s3 ls s3://platform-walkthrough-dev-artifacts
 
 aws --endpoint-url="$MINISTACK_ENDPOINT" dynamodb create-table \
@@ -273,7 +310,7 @@ aws --endpoint-url="$MINISTACK_ENDPOINT" dynamodb describe-table \
 MiniStack accepts dummy credentials. It stores IAM resources but does not enforce their policies, so
 use the portal's RBAC and pure IAM-policy tests to exercise authorization logic.
 
-## 9. Run the browser UI
+## 10. Run the browser UI
 
 In a separate terminal:
 
@@ -288,7 +325,7 @@ session cookie, it redirects to `/login`. Select **Team lead** and choose **Sign
 project catalogue. The local sign-in endpoint refuses to operate outside development mode; a
 deployed environment must replace it with the configured STS verification flow.
 
-## 10. Run automated verification
+## 11. Run automated verification
 
 Backend:
 

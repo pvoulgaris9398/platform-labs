@@ -13,7 +13,17 @@ export interface Project {
   readonly name: string;
   readonly application_name: string;
   readonly team_name: string;
+  readonly description: string | null;
+  readonly cost_center: string;
+  readonly default_owner: string;
   readonly allowed_environments: readonly string[];
+  readonly allowed_resource_types: readonly ResourceType[];
+  readonly monthly_budget_usd: string;
+  readonly deployer_role_arn: string | null;
+  readonly developer_role_arn: string | null;
+  readonly readonly_role_arn: string | null;
+  readonly status: string;
+  readonly iam_error_details: string | null;
 }
 
 export interface ResourceRequest {

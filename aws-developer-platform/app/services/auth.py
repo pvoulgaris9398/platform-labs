@@ -18,6 +18,7 @@ RBAC: dict[Role, frozenset[str]] = {
             "approvals:manage",
             "projects:create",
             "projects:read",
+            "projects:update",
         }
     ),
     Role.PLATFORM_ADMIN: frozenset({"*"}),

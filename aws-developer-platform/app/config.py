@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     github_webhook_secret: SecretStr | None = None
     config_repo: str = "platform-config"
     aws_region: str = "us-east-1"
+    project_iam_backend: str = "ministack"
+    ministack_endpoint: str = "http://localhost:4566"
+    ministack_account_id: str = "000000000000"
     rate_limit_per_minute: int = 60
     global_rate_limit_per_minute: int = 1000
 

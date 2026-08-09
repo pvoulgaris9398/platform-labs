@@ -44,6 +44,9 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://platform:local-development-only@db/platform
       SESSION_SECRET: local-development-only-change-me-32-bytes
+      PROJECT_IAM_BACKEND: ministack
+      MINISTACK_ENDPOINT: http://ministack:4566
+      MINISTACK_ACCOUNT_ID: "000000000000"
     ports: ["8000:8000"]
     depends_on:
       db:

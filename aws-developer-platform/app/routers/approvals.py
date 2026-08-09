@@ -8,11 +8,15 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import ResourceRequest
+from app.db.models import ResourceInventory, ResourceRequest
 from app.db.session import get_db
 from app.middleware.session import require
 from app.schemas.common import Envelope, Identity
 from app.schemas.requests import Rejection, RequestStatus, ResourceRequestResponse
+from app.services.local_provisioner import (
+    LocalResourceProvisioner,
+    get_local_resource_provisioner,
+)
 from app.utils.state_machine import transition
 
 router = APIRouter(prefix="/approvals", tags=["approvals"])
@@ -46,15 +50,46 @@ async def approve(
     request_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
     user: Annotated[Identity, Depends(require("approvals:manage"))],
+    provisioner: Annotated[LocalResourceProvisioner, Depends(get_local_resource_provisioner)],
 ) -> Envelope[ResourceRequestResponse]:
-    """Approve a pending request."""
+    """Approve a pending request and provision it in the local POC backend."""
 
     record = await db.get(ResourceRequest, request_id)
     if record is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "request not found")
-    record.status = transition(record.status, RequestStatus.APPROVED).value
-    record.approved_by = user.principal_arn
-    record.approved_at = datetime.now(UTC)
+    if record.status == RequestStatus.PROVISIONED.value:
+        return Envelope(data=ResourceRequestResponse.model_validate(record))
+    if record.status == RequestStatus.FAILED.value:
+        raise HTTPException(status.HTTP_409_CONFLICT, "request provisioning already failed")
+    if record.status == RequestStatus.APPROVAL_PENDING.value:
+        record.status = transition(record.status, RequestStatus.APPROVED).value
+        record.approved_by = user.principal_arn
+        record.approved_at = datetime.now(UTC)
+    elif record.status != RequestStatus.APPROVED.value:
+        raise HTTPException(status.HTTP_409_CONFLICT, f"request is not approvable: {record.status}")
+    record.status = transition(record.status, RequestStatus.PROVISIONING).value
+    try:
+        result = await provisioner.provision(record)
+    except Exception as exc:
+        record.status = transition(record.status, RequestStatus.FAILED).value
+        record.provisioning_error = str(exc)
+    else:
+        record.status = transition(record.status, RequestStatus.PROVISIONED).value
+        record.provisioned_arn = result.resource_arn
+        record.provisioned_at = datetime.now(UTC)
+        db.add(
+            ResourceInventory(
+                request_id=record.id,
+                project_id=record.project_id,
+                resource_type=record.resource_type,
+                resource_name=record.resource_name,
+                resource_arn=result.resource_arn,
+                region=record.region,
+                environment=record.environment,
+                tags=record.tags,
+                expiry_date=record.expiry_date,
+            )
+        )
     return Envelope(data=ResourceRequestResponse.model_validate(record))
 
 
