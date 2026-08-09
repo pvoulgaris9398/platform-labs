@@ -16,6 +16,12 @@ Run commands from this `aws-developer-platform` directory.
 
 ### Running pnpm from Git Bash on Windows
 
+Altnatively, install onto windows via instructions [here](https://pnpm.io/installation)
+
+```bash
+curl -fsSL https://get.pnpm.io/install.sh | sh -
+```
+
 The pnpm project recommends npm or Corepack on Windows. This runbook uses `npx` so no global pnpm
 installation is required. Define this helper once in each Git Bash terminal that runs frontend
 commands:
